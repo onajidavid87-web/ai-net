@@ -1,13 +1,30 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { App } from './App';
-import './styles.css';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './styles/global.css'
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <BrowserRouter>
+async function prepareApp() {
+  // Always prepare MSW if we're in dev or test mode.
+  // We can check if mockServiceWorker.js is present or just import mocks.
+  if (import.meta.env.DEV || import.meta.env.MODE === 'test' || window.location.hostname === 'localhost') {
+    try {
+      const { worker } = await import('./mocks/browser')
+      await worker.start({
+        onUnhandledRequest: 'bypass',
+        serviceWorker: {
+          url: '/mockServiceWorker.js',
+        }
+      })
+    } catch (e) {
+      console.warn('MSW failed to start', e)
+    }
+  }
+}
+
+prepareApp().then(() => {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
       <App />
-    </BrowserRouter>
-  </React.StrictMode>,
-);
+    </React.StrictMode>,
+  )
+})
